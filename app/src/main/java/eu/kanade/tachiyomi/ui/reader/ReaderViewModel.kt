@@ -42,6 +42,7 @@ import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.cacheImageDir
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -218,6 +219,7 @@ class ReaderViewModel @JvmOverloads constructor(
 
     private val incognitoMode = preferences.incognitoMode().get()
     private val downloadAheadAmount = downloadPreferences.autoDownloadWhileReading().get()
+    private var updateChapterProgressJob: Job? = null
 
     init {
         // To save state
@@ -436,7 +438,8 @@ class ReaderViewModel @JvmOverloads constructor(
         val pages = selectedChapter.pages ?: return
 
         // Save last page read and mark as read if needed
-        viewModelScope.launchNonCancellable {
+        updateChapterProgressJob?.cancel()
+        updateChapterProgressJob = launchIO {
             updateChapterProgress(selectedChapter, page)
         }
 
